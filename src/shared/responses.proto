@@ -1,0 +1,23 @@
+package chat.resps;
+import 'common.proto';
+
+enum ResponseType {
+  Common = 1;
+  Invalid = 2;
+  Receive = 3;
+}
+
+message ChatResponses {
+  required ResponseType type = 1;
+  optional InvalidRequest invalid = 2;
+  optional ReceivedChatMessages receivedMessages = 3;
+}
+
+message ReceivedChatMessages {
+  repeated chat.common.ChatMessage messages = 1;
+}
+
+message InvalidRequest {
+  required int32 errorCode = 1;
+  optional bytes originalRequest = 2;
+}

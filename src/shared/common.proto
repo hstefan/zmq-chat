@@ -1,0 +1,13 @@
+package chat.common;
+
+message Timestamp {
+  required int64 seconds = 1;
+  required int64 nanos  = 2;
+}
+
+message ChatMessage {
+  required string nickname = 1;
+  required string content = 2;
+  required chat.common.Timestamp sentAt = 3;
+  optional chat.common.Timestamp receivedAt = 4;
+}

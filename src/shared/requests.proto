@@ -1,0 +1,22 @@
+package chat.reqs;
+import 'common.proto';
+
+enum RequestType {
+  Put = 1;
+  Get = 2;
+}
+
+message ChatRequest {
+  required RequestType type = 1;
+  optional MessagePut messagePut = 2;
+  optional MessageGet messageGet = 3;
+}
+
+message MessagePut {
+  required chat.common.ChatMessage msg = 1;
+}
+
+message MessageGet {
+  optional chat.common.Timestamp fromTime = 1;
+  optional chat.common.Timestamp toTime = 2;
+}

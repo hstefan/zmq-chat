@@ -1,8 +1,12 @@
 set(SOURCE
   main.cpp
+  ChatServer.cpp
+  MessageContainer.cpp
 )
 
 set(HEADER
+  ChatServer.hpp
+  MessageContainer.hpp
 )
 
 

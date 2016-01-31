@@ -12,6 +12,7 @@ set(HEADER
   Algorithms.hpp
   TimestampUtil.hpp
   MessagingUtils.hpp
+  Debug.hpp
 )
 
 PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_SOURCE})

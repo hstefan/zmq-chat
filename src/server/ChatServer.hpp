@@ -15,8 +15,7 @@ public:
   void run();
 
 private:
-  zmq::message_t makeResponse(const zmq::message_t &request,
-                              zmq::message_t *response);
+  zmq::message_t makeResponse(const zmq::message_t &request);
   zmq::message_t handleMessageSending(chat::reqs::ChatRequest request);
   zmq::message_t handleMessageRetrieval(chat::reqs::ChatRequest request);
   zmq::message_t

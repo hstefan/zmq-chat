@@ -20,14 +20,12 @@ void ChatServer::run() {
   for (;;) {
     zmq::message_t request;
     _socket.recv(&request);
-
-    zmq::message_t response = makeResponse(request, &response);
+    zmq::message_t response = makeResponse(request);
     _socket.send(response);
   }
 }
 
-zmq::message_t ChatServer::makeResponse(const zmq::message_t &request,
-                      zmq::message_t *response) {
+zmq::message_t ChatServer::makeResponse(const zmq::message_t &request) {
   ChatRequest req;
   if (req.ParseFromArray(request.data(), request.size())) {
     switch (req.type()) {

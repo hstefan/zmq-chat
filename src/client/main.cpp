@@ -1,20 +1,13 @@
-#include <zmq.hpp>
-#include <string>
+#include "ChatClient.hpp"
 #include <iostream>
-#include <chrono>
 #include <thread>
 
 int main() {
-  using namespace std::chrono;
-
-  zmq::context_t context(1);
-  zmq::socket_t socket(context, ZMQ_REQ);
-
-  std::cout << "Connecting to hello world server" << std::endl;
-  socket.connect("tcp://localhost:5555");
-
-  for (;;) {
+  hst::ChatClient client("tcp://localhost:5555");
+  client.sendMessage("hstefan", "Hello from the other siiiiide");
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  for (chat::common::ChatMessage m : client.receiveMessages()) {
+    std::cout << m.nickname() << ": " << m.content() << std::endl;
   }
-  return 0;
 }
 

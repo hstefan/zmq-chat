@@ -1,8 +1,10 @@
 set(SOURCE
   main.cpp
+  ChatClient.cpp
 )
 
 set(HEADER
+  ChatClient.hpp
 )
 
 

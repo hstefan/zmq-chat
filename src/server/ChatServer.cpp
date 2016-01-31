@@ -48,7 +48,8 @@ ChatServer::handleMessageSending(chat::reqs::ChatRequest request) {
   Timestamp recvTs = timestampMessageFromNative(system_clock::now());
   // create response message with received timestamp
   ChatMessage msg = request.messageput().msg();
-  *msg.mutable_sentat() = recvTs;
+  *msg.mutable_receivedat() = recvTs;
+  _storage.put(std::move(msg));
   ChatResponses okResponse;
   okResponse.set_type(ResponseType::Common);
   return wrapMessage(okResponse);

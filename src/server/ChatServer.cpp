@@ -3,6 +3,7 @@
 #include "shared/responses.pb.h"
 #include "shared/TimestampUtil.hpp"
 #include "shared/MessagingUtils.hpp"
+#include "shared/Debug.hpp"
 
 using namespace hst;
 using namespace chat::reqs;
@@ -31,13 +32,17 @@ zmq::message_t ChatServer::makeResponse(const zmq::message_t &request,
   if (req.ParseFromArray(request.data(), request.size())) {
     switch (req.type()) {
     case RequestType::Put:
+      LOG("Received PUT message");
       return handleMessageSending(req);
     case RequestType::Get:
+      LOG("Received GET message");
       return handleMessageRetrieval(req);
     default:
+      LOG("Received unknown message");
       break;
     }
   } else {
+    LOG("Failed to parse from array");
     return makeInvalidRequest(GeneralError);
   }
 }

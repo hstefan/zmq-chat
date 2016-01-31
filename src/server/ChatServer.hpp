@@ -19,7 +19,6 @@ private:
                               zmq::message_t *response);
   zmq::message_t handleMessageSending(chat::reqs::ChatRequest request);
   zmq::message_t handleMessageRetrieval(chat::reqs::ChatRequest request);
-  zmq::message_t wrapMessage(const ::google::protobuf::Message &message) const;
   zmq::message_t
   makeInvalidRequest(int errorCode,
                      const chat::reqs::ChatRequest &request) const;

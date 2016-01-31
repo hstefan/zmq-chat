@@ -2,6 +2,7 @@
 #include "shared/requests.pb.h"
 #include "shared/responses.pb.h"
 #include "shared/TimestampUtil.hpp"
+#include "shared/MessagingUtils.hpp"
 
 using namespace hst;
 using namespace chat::reqs;
@@ -81,11 +82,7 @@ ChatServer::handleMessageRetrieval(chat::reqs::ChatRequest request) {
   return wrapMessage(msgs);
 }
 
-zmq::message_t ChatServer::wrapMessage(const protobuf::Message &message) const {
-  const auto ser = message.SerializeAsString();
-  zmq::message_t msg(ser.size());
-  std::memcpy(msg.data(), ser.data(), ser.length());
-  return msg;
+  return wrapMessage(resp);
 }
 
 zmq::message_t

@@ -78,11 +78,13 @@ ChatServer::handleMessageRetrieval(chat::reqs::ChatRequest request) {
     return makeInvalidRequest(GeneralError, request);
   }
 
+  ChatResponses resp;
+  resp.set_type(ResponseType::Receive);
+
   ReceivedChatMessages msgs;
-  for(const auto& m : queryResult)
+  for (const auto &m : queryResult)
     *msgs.add_messages() = m;
-  return wrapMessage(msgs);
-}
+  *resp.mutable_receivedmessages() = msgs;
 
   return wrapMessage(resp);
 }

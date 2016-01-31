@@ -65,15 +65,14 @@ ChatServer::handleMessageRetrieval(chat::reqs::ChatRequest request) {
   // query for messages in interval
   std::vector<ChatMessage> queryResult;
   if (qualReq.has_totime() && qualReq.has_fromtime()) {
-    queryResult = _storage.getFromTo(
-        nativeTimestampFromMessage(qualReq.fromtime()),
-        nativeTimestampFromMessage(qualReq.totime()));
+    queryResult =
+        _storage.getFromTo(nativeTimestampFromMessage(qualReq.fromtime()),
+                           nativeTimestampFromMessage(qualReq.totime()));
   } else if (qualReq.has_totime()) {
-    queryResult = _storage.getTo(
-        nativeTimestampFromMessage(qualReq.totime()));
+    queryResult = _storage.getTo(nativeTimestampFromMessage(qualReq.totime()));
   } else if (qualReq.has_fromtime()) {
-    queryResult = _storage.getFrom(
-        nativeTimestampFromMessage(qualReq.fromtime()));
+    queryResult =
+        _storage.getFrom(nativeTimestampFromMessage(qualReq.fromtime()));
   } else {
     // invalid request, at least one of the optional fields must be present
     return makeInvalidRequest(GeneralError, request);
@@ -98,7 +97,7 @@ ChatServer::makeInvalidRequest(int errorCode,
   return wrapMessage(r);
 }
 
-zmq::message_t ChatServer::makeInvalidRequest(int errorCode)  const {
+zmq::message_t ChatServer::makeInvalidRequest(int errorCode) const {
   InvalidRequest r;
   r.set_errorcode(errorCode);
   return wrapMessage(r);

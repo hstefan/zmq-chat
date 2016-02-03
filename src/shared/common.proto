@@ -5,9 +5,13 @@ message Timestamp {
   required int64 nanos  = 2;
 }
 
-message ChatMessage {
+message User {
   required string nickname = 1;
-  required string content = 2;
-  required chat.common.Timestamp sentAt = 3;
-  optional chat.common.Timestamp receivedAt = 4;
+};
+
+message ChatMessage {
+  optional int64 messageId = 1;
+  required User user = 2;
+  required string content = 3;
+  optional Timestamp receivedAt = 4;
 }

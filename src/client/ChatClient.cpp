@@ -2,6 +2,7 @@
 #include "shared/requests.pb.h"
 #include "shared/TimestampUtil.hpp"
 #include "shared/MessagingUtils.hpp"
+#include "shared/Debug.hpp"
 #include <iostream>
 
 using namespace hst;
@@ -16,15 +17,19 @@ ChatClient::ChatClient(const char *serverAddress)
 }
 
 void ChatClient::sendMessage(std::string nickname, std::string message) {
-  ChatMessage msg;
-  msg.set_nickname(nickname);
-  msg.set_content(message);
-  *msg.mutable_sentat() = timestampMessageFromNative(system_clock::now());
-  MessagePut msgPut;
-  *msgPut.mutable_msg() = msg;
-  ChatRequest req;
+  User user;
+  user.set_nickname(nickname);
+
+  ChatMessage chatMessage;
+  *chatMessage.mutable_user() = user;
+  chatMessage.set_content(message);
+
+  PutRequest putRequest;
+  *putRequest.mutable_msg() = chatMessage;
+
+  Request req;
   req.set_type(RequestType::Put);
-  *req.mutable_messageput() = msgPut;
+  *req.mutable_messageput() = putRequest;
 
   _socket.send(wrapMessage(req));
 
@@ -34,26 +39,40 @@ void ChatClient::sendMessage(std::string nickname, std::string message) {
   ChatResponses qualResponse;
   if (qualResponse.ParseFromArray(response.data(), response.size())) {
     switch (qualResponse.type()) {
-    case Common:
-      // we don't need to do anything
+    case ResponseType::Get:
+      if (qualResponse.status() != ResponseStatus::Ok)
+        LOG_E("Server responded with error status for Get.\n");
       break;
-    case Invalid:
-      std::cerr << "Invalid request, server returned "
-                << qualResponse.invalid().errorcode() << std::endl;
+    case ResponseType::Invalid:
+      switch (qualResponse.status()) {
+        case ResponseStatus::MissingArguments:
+          LOG_E("Server responded with MissingArguments error.\n");
+          break;
+        case ResponseStatus::FailedToParse:
+          LOG_E("Server responded with FailedToParse error.\n");
+          break;
+        case ResponseStatus::GeneralError:
+          LOG_E("Server responded with GeneralError.\n");
+          break;
+        case ResponseStatus::Ok:
+          LOG_W("Server answer with Ok status for invalid request.\n");
+          break;
+      }
       break;
-    case Receive:
-      std::cerr << "Unexpected response for put request" << std::endl;
+    case ResponseType::Put:
+      _lastId = qualResponse.putresponse().messageid();
       break;
     }
   }
 }
 
 std::vector<ChatMessage> ChatClient::receiveMessages() {
-  MessageGet msgGet;
-  *msgGet.mutable_fromtime() = timestampMessageFromNative(_lastUpdate);
-  ChatRequest req;
+  GetRequest getRequest;
+  if (_lastId != -1)
+    getRequest.set_lastknownid(_lastId);
+  Request req;
   req.set_type(RequestType::Get);
-  *req.mutable_messageget() = msgGet;
+  *req.mutable_messageget() = getRequest;
 
   _socket.send(wrapMessage(req));
 
@@ -65,23 +84,28 @@ std::vector<ChatMessage> ChatClient::receiveMessages() {
   ChatResponses qualResponse;
   if (qualResponse.ParseFromArray(response.data(), response.size())) {
     switch (qualResponse.type()) {
-    case Common:
-      std::cerr << "Unexpected response for get request" << std::endl;
-      break;
-    case Invalid:
-      std::cerr << "Invalid request, server returned "
-                << qualResponse.invalid().errorcode() << std::endl;
-      break;
-    case Receive:
-      const auto &recv = qualResponse.receivedmessages();
-      newMessages.insert(newMessages.end(), recv.messages().begin(),
-                         recv.messages().end());
-      if (!newMessages.empty()) {
-        _lastUpdate =
-            nativeTimestampFromMessage(newMessages.back().receivedat());
-        _messages.insert(_messages.end(), newMessages.begin(),
-                         newMessages.end());
+    case ResponseType::Invalid:
+      switch (qualResponse.status()) {
+      case ResponseStatus::MissingArguments:
+        LOG_E("Server responded with MissingArguments error.\n");
+        break;
+      case ResponseStatus::FailedToParse:
+        LOG_E("Server responded with FailedToParse error.\n");
+        break;
+      case ResponseStatus::GeneralError:
+        LOG_E("Server responded with GeneralError.\n");
+        break;
+      case ResponseStatus::Ok:
+        LOG_W("Server answer with Ok status for invalid request.\n");
+        break;
       }
+      break;
+    case ResponseType::Put:
+      LOG_E("Unexpected response for get request.\n");
+      break;
+    case ResponseType::Get:
+      const auto &messages = qualResponse.getresponse().messages();
+      newMessages.insert(newMessages.end(), messages.begin(), messages.end());
       break;
     }
   }

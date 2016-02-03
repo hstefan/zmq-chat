@@ -1,4 +1,5 @@
 #include "ChatClient.hpp"
+#include "shared/common.pb.h"
 #include "shared/TimestampUtil.hpp"
 #include <iostream>
 
@@ -29,7 +30,8 @@ void doGetCommand(hst::ChatClient *client) {
     std::cout << "<< No new messages!" << std::endl;
   else {
     for (const auto &m : messages)
-      std::cout << "<< " << m.nickname() << ": " << m.content() << std::endl;
+      std::cout << "<< " << m.user().nickname() << ": " << m.content()
+                << std::endl;
   }
 }
 

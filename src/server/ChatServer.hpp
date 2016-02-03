@@ -3,6 +3,7 @@
 #include <zmq.hpp>
 #include "MessageContainer.hpp"
 #include "shared/requests.pb.h"
+#include "shared/responses.pb.h"
 
 namespace hst {
 
@@ -16,12 +17,12 @@ public:
 
 private:
   zmq::message_t makeResponse(const zmq::message_t &request);
-  zmq::message_t handleMessageSending(chat::reqs::ChatRequest request);
-  zmq::message_t handleMessageRetrieval(chat::reqs::ChatRequest request);
+  zmq::message_t handleMessageSending(chat::reqs::Request request);
+  zmq::message_t handleMessageRetrieval(chat::reqs::Request request);
+  zmq::message_t makeInvalidRequest(chat::resps::ResponseStatus status,
+                                    const chat::reqs::Request &request) const;
   zmq::message_t
-  makeInvalidRequest(int errorCode,
-                     const chat::reqs::ChatRequest &request) const;
-  zmq::message_t makeInvalidRequest(int errorCode) const;
+  makeInvalidRequest(chat::resps::ResponseStatus errorCode) const;
   zmq::context_t _context;
   zmq::socket_t _socket;
   MessageContainer _storage;

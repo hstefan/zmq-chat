@@ -7,15 +7,13 @@
 namespace hst {
 class MessageContainer {
 public:
-  using Timestamp = std::chrono::system_clock::time_point;
-  using ChatMessage = chat::common::ChatMessage;
-
-  void put(ChatMessage message);
-  std::vector<ChatMessage> getFromTo(Timestamp from, Timestamp to) const;
-  std::vector<ChatMessage> getFrom(Timestamp from) const;
-  std::vector<ChatMessage> getTo(Timestamp to) const;
+  using MessageId = ::google::protobuf::int64_t;
+  using ContainerType = std::vector<chat::common::ChatMessage>;
+  MessageId put(chat::common::ChatMessage message);
+  ContainerType getAll() const;
+  ContainerType getAfterId(MessageId id) const;
 private:
-  std::vector<ChatMessage> _messages;
+  ContainerType _messages;
 };
 
 }

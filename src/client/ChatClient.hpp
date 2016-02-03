@@ -17,6 +17,7 @@ public:
 private:
   zmq::context_t _context;
   zmq::socket_t _socket;
+  ::google::protobuf::int64 _lastId;
   std::chrono::system_clock::time_point _lastUpdate;
   std::vector<chat::common::ChatMessage> _messages;
 };

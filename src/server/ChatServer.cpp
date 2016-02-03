@@ -4,6 +4,7 @@
 #include "shared/TimestampUtil.hpp"
 #include "shared/MessagingUtils.hpp"
 #include "shared/Debug.hpp"
+#include <cassert>
 
 using namespace hst;
 using namespace chat::reqs;
@@ -26,7 +27,7 @@ void ChatServer::run() {
 }
 
 zmq::message_t ChatServer::makeResponse(const zmq::message_t &request) {
-  ChatRequest req;
+  Request req;
   if (req.ParseFromArray(request.data(), request.size())) {
     switch (req.type()) {
     case RequestType::Put:
@@ -41,66 +42,68 @@ zmq::message_t ChatServer::makeResponse(const zmq::message_t &request) {
     }
   } else {
     LOG("Failed to parse from array");
-    return makeInvalidRequest(GeneralError);
+    return makeInvalidRequest(ResponseStatus::FailedToParse);
   }
 }
 
 zmq::message_t
-ChatServer::handleMessageSending(chat::reqs::ChatRequest request) {
-  using namespace std::chrono;
+ChatServer::handleMessageSending(Request request) {
   // create timestamp message for "now"
-  Timestamp recvTs = timestampMessageFromNative(system_clock::now());
+  Timestamp recvTs = timestampMessageFromNative(std::chrono::system_clock::now());
   // create response message with received timestamp
   ChatMessage msg = request.messageput().msg();
   *msg.mutable_receivedat() = recvTs;
   _storage.put(std::move(msg));
-  ChatResponses okResponse;
-  okResponse.set_type(ResponseType::Common);
-  return wrapMessage(okResponse);
+  // create response message
+  ChatResponses response;
+  response.set_type(ResponseType::Put);
+  response.set_status(ResponseStatus::Ok);
+  return wrapMessage(response);
 }
 
 zmq::message_t
-ChatServer::handleMessageRetrieval(chat::reqs::ChatRequest request) {
-  auto qualReq = request.messageget();
-  // query for messages in interval
+ChatServer::handleMessageRetrieval(Request request) {
+  const GetRequest getRequest = request.messageget();
+  // query messages accordingly to the optional lastknownid parameter
   std::vector<ChatMessage> queryResult;
-  if (qualReq.has_totime() && qualReq.has_fromtime()) {
-    queryResult =
-        _storage.getFromTo(nativeTimestampFromMessage(qualReq.fromtime()),
-                           nativeTimestampFromMessage(qualReq.totime()));
-  } else if (qualReq.has_totime()) {
-    queryResult = _storage.getTo(nativeTimestampFromMessage(qualReq.totime()));
-  } else if (qualReq.has_fromtime()) {
-    queryResult =
-        _storage.getFrom(nativeTimestampFromMessage(qualReq.fromtime()));
-  } else {
-    // invalid request, at least one of the optional fields must be present
-    return makeInvalidRequest(GeneralError, request);
-  }
+  if (getRequest.has_lastknownid())
+    queryResult = _storage.getAfterId(getRequest.lastknownid());
+  else
+    queryResult = _storage.getAll();
+
+  GetResponse getResponse;
+  for (const auto &m : queryResult)
+    *getResponse.add_messages() = m;
 
   ChatResponses resp;
-  resp.set_type(ResponseType::Receive);
-
-  ReceivedChatMessages msgs;
-  for (const auto &m : queryResult)
-    *msgs.add_messages() = m;
-  *resp.mutable_receivedmessages() = msgs;
+  resp.set_type(ResponseType::Get);
+  resp.set_status(ResponseStatus::Ok);
+  *resp.mutable_getresponse() = getResponse;
 
   return wrapMessage(resp);
 }
 
 zmq::message_t
-ChatServer::makeInvalidRequest(int errorCode,
-                               const ChatRequest &request) const {
-  InvalidRequest r;
+ChatServer::makeInvalidRequest(ResponseStatus status,
+                               const Request &request) const {
+  assert(status != ResponseStatus::Ok &&
+         "Attempt to respond to invalid request with Ok status");
+  InvalidRequest invalidRequest;
   std::string reqData; // TODO
-  r.set_errorcode(errorCode);
-  r.set_originalrequest(reqData);
-  return wrapMessage(r);
+  invalidRequest.set_originalrequest(reqData);
+
+  ChatResponses resp;
+  resp.set_type(ResponseType::Invalid);
+  resp.set_status(status);
+  *resp.mutable_invalid() = invalidRequest;
+  return wrapMessage(resp);
 }
 
-zmq::message_t ChatServer::makeInvalidRequest(int errorCode) const {
-  InvalidRequest r;
-  r.set_errorcode(errorCode);
-  return wrapMessage(r);
+zmq::message_t ChatServer::makeInvalidRequest(ResponseStatus status) const {
+  InvalidRequest invalidRequest;
+  ChatResponses resp;
+  resp.set_type(ResponseType::Invalid);
+  resp.set_status(status);
+  *resp.mutable_invalid() = invalidRequest;
+  return wrapMessage(resp);
 }

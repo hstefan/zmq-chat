@@ -7,41 +7,24 @@ using namespace hst;
 using namespace std::chrono;
 using namespace chat::common;
 
-void MessageContainer::put(ChatMessage message) {
+MessageContainer::MessageId MessageContainer::put(ChatMessage message) {
+  message.set_messageid(static_cast<MessageId>(_messages.size()));
   _messages.push_back(message);
+  return _messages.back().messageid();
 }
 
-std::vector<ChatMessage> MessageContainer::getFromTo(Timestamp from,
-                                                     Timestamp to) const {
-  std::vector<ChatMessage> results;
-  const auto firstIt = std::lower_bound(
-      _messages.begin(), _messages.end(), from,
-      [](const auto &lhs, const auto &rhs) {
-        // TODO: remove the need for converting each timestamp to a chrono
-        // duration
-        return nativeTimestampFromMessage(lhs.receivedat()) < rhs;
-      });
-
-  copy_while(firstIt, _messages.end(), std::back_inserter(results),
-             [&](const auto &m) {
-               return nativeTimestampFromMessage(m.receivedat()) <= to;
-             });
-  return results;
+MessageContainer::ContainerType MessageContainer::getAll() const {
+  return _messages;
 }
 
-std::vector<ChatMessage> MessageContainer::getFrom(Timestamp from) const {
-  if (!_messages.empty())
-    return getFromTo(from,
-                     nativeTimestampFromMessage(_messages.back().receivedat()));
-  else
-    return std::vector<ChatMessage>{};
+MessageContainer::ContainerType
+MessageContainer::getAfterId(MessageId id) const {
+  // message ids are also the index of the array, so this should be as easy
+  // as slicing the array after the id through the end
+  ContainerType answer;
+  size_t index = static_cast<size_t>(id);
+  if (index < _messages.size())
+    answer.insert(answer.begin(), std::next(_messages.begin(), index),
+                  _messages.end());
+  return answer;
 }
-
-std::vector<ChatMessage> MessageContainer::getTo(Timestamp to) const {
-  if (!_messages.empty())
-    return getFromTo(nativeTimestampFromMessage(_messages.front().receivedat()),
-                     to);
-  else
-    return std::vector<ChatMessage>{};
-}
-

@@ -6,17 +6,16 @@ enum RequestType {
   Get = 2;
 }
 
-message ChatRequest {
+message Request {
   required RequestType type = 1;
-  optional MessagePut messagePut = 2;
-  optional MessageGet messageGet = 3;
+  optional PutRequest messagePut = 2;
+  optional GetRequest messageGet = 3;
 }
 
-message MessagePut {
+message PutRequest {
   required chat.common.ChatMessage msg = 1;
 }
 
-message MessageGet {
-  optional chat.common.Timestamp fromTime = 1;
-  optional chat.common.Timestamp toTime = 2;
+message GetRequest {
+  optional int64 lastKnownId = 1;
 }

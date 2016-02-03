@@ -2,22 +2,34 @@ package chat.resps;
 import 'common.proto';
 
 enum ResponseType {
-  Common = 1;
-  Invalid = 2;
-  Receive = 3;
+  Put = 1;
+  Get = 2;
+  Invalid = 3;
+}
+
+enum ResponseStatus {
+  Ok = 1;
+  FailedToParse = 2;
+  MissingArguments = 3;
+  GeneralError = 4;
 }
 
 message ChatResponses {
   required ResponseType type = 1;
-  optional InvalidRequest invalid = 2;
-  optional ReceivedChatMessages receivedMessages = 3;
+  required ResponseStatus status = 2;
+  optional InvalidRequest invalid = 3;
+  optional GetResponse getResponse = 4;
+  optional PutResponse putResponse = 5;
 }
 
-message ReceivedChatMessages {
+message GetResponse {
   repeated chat.common.ChatMessage messages = 1;
 }
 
+message PutResponse {
+  optional int64 messageId = 1;
+}
+
 message InvalidRequest {
-  required int32 errorCode = 1;
   optional bytes originalRequest = 2;
 }

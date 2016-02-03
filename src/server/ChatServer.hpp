@@ -24,7 +24,7 @@ private:
   zmq::message_t
   makeInvalidRequest(chat::resps::ResponseStatus errorCode) const;
   zmq::context_t _context;
-  zmq::socket_t _socket;
+  zmq::socket_t _repSocket;
   MessageContainer _storage;
 };
 

@@ -13,16 +13,16 @@ using namespace chat::common;
 using namespace google;
 
 ChatServer::ChatServer(const char *bindAddress)
-    : _context(1), _socket(_context, ZMQ_REP), _storage() {
-  _socket.bind(bindAddress);
+    : _context(1), _repSocket(_context, ZMQ_REP), _storage() {
+  _repSocket.bind(bindAddress);
 }
 
 void ChatServer::run() {
   for (;;) {
     zmq::message_t request;
-    _socket.recv(&request);
+    _repSocket.recv(&request);
     zmq::message_t response = makeResponse(request);
-    _socket.send(response);
+    _repSocket.send(response);
   }
 }
 

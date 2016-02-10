@@ -1,7 +1,7 @@
-#include "ChatServer.hpp"
+#include "MessageServer.hpp"
 
 int main() {
-  hst::ChatServer server("tcp://*:5555");
+  hst::MessageServer server("tcp://*:5555");
   server.run();
   return 0;
 }

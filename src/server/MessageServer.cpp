@@ -1,4 +1,4 @@
-#include "ChatServer.hpp"
+#include "MessageServer.hpp"
 #include "shared/requests.pb.h"
 #include "shared/responses.pb.h"
 #include "shared/TimestampUtil.hpp"
@@ -12,12 +12,12 @@ using namespace chat::resps;
 using namespace chat::common;
 using namespace google;
 
-ChatServer::ChatServer(const char *bindAddress)
+MessageServer::MessageServer(const char *bindAddress)
     : _context(1), _repSocket(_context, ZMQ_REP), _storage() {
   _repSocket.bind(bindAddress);
 }
 
-void ChatServer::run() {
+void MessageServer::run() {
   for (;;) {
     zmq::message_t request;
     _repSocket.recv(&request);
@@ -26,7 +26,7 @@ void ChatServer::run() {
   }
 }
 
-zmq::message_t ChatServer::makeResponse(const zmq::message_t &request) {
+zmq::message_t MessageServer::makeResponse(const zmq::message_t &request) {
   Request req;
   if (req.ParseFromArray(request.data(), request.size())) {
     switch (req.type()) {
@@ -47,7 +47,7 @@ zmq::message_t ChatServer::makeResponse(const zmq::message_t &request) {
 }
 
 zmq::message_t
-ChatServer::handleMessageSending(Request request) {
+MessageServer::handleMessageSending(Request request) {
   // create timestamp message for "now"
   Timestamp recvTs = timestampMessageFromNative(std::chrono::system_clock::now());
   // create response message with received timestamp
@@ -62,7 +62,7 @@ ChatServer::handleMessageSending(Request request) {
 }
 
 zmq::message_t
-ChatServer::handleMessageRetrieval(Request request) {
+MessageServer::handleMessageRetrieval(Request request) {
   const GetRequest getRequest = request.messageget();
   // query messages accordingly to the optional lastknownid parameter
   std::vector<ChatMessage> queryResult;
@@ -84,7 +84,7 @@ ChatServer::handleMessageRetrieval(Request request) {
 }
 
 zmq::message_t
-ChatServer::makeInvalidRequest(ResponseStatus status,
+MessageServer::makeInvalidRequest(ResponseStatus status,
                                const Request &request) const {
   assert(status != ResponseStatus::Ok &&
          "Attempt to respond to invalid request with Ok status");
@@ -99,7 +99,7 @@ ChatServer::makeInvalidRequest(ResponseStatus status,
   return wrapMessage(resp);
 }
 
-zmq::message_t ChatServer::makeInvalidRequest(ResponseStatus status) const {
+zmq::message_t MessageServer::makeInvalidRequest(ResponseStatus status) const {
   InvalidRequest invalidRequest;
   ChatResponses resp;
   resp.set_type(ResponseType::Invalid);

@@ -7,12 +7,12 @@
 
 namespace hst {
 
-class ChatServer {
+class MessageServer {
 public:
   static const int GeneralError = 0;
-  ChatServer(const char *bindAddress);
-  ChatServer(ChatServer &) = delete;
-  ChatServer &operator=(ChatServer &) = delete;
+  MessageServer(const char *bindAddress);
+  MessageServer(MessageServer &) = delete;
+  MessageServer &operator=(MessageServer &) = delete;
   void run();
 
 private:

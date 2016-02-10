@@ -1,11 +1,11 @@
 set(SOURCE
   main.cpp
-  ChatServer.cpp
+  MessageServer.cpp
   MessageContainer.cpp
 )
 
 set(HEADER
-  ChatServer.hpp
+  MessageServer.hpp
   MessageContainer.hpp
 )
 

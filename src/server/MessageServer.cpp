@@ -12,44 +12,50 @@ using namespace chat::resps;
 using namespace chat::common;
 using namespace google;
 
-MessageServer::MessageServer(const char *bindAddress)
-    : _context(1), _repSocket(_context, ZMQ_REP), _storage() {
-  _repSocket.bind(bindAddress);
+MessageServer::MessageServer(const char *repBindAddress,
+                             const char *pubBindAddress)
+    : _context(1), _repSocket(_context, ZMQ_REP), _pubSocket(_context, ZMQ_PUB),
+      _storage() {
+  _repSocket.bind(repBindAddress);
+  _pubSocket.bind(pubBindAddress);
 }
 
 void MessageServer::run() {
   for (;;) {
-    zmq::message_t request;
-    _repSocket.recv(&request);
-    zmq::message_t response = makeResponse(request);
-    _repSocket.send(response);
-  }
-}
-
-zmq::message_t MessageServer::makeResponse(const zmq::message_t &request) {
-  Request req;
-  if (req.ParseFromArray(request.data(), request.size())) {
-    switch (req.type()) {
-    case RequestType::Put:
-      LOG("Received PUT message");
-      return handleMessageSending(req);
-    case RequestType::Get:
-      LOG("Received GET message");
-      return handleMessageRetrieval(req);
-    default:
-      LOG("Received unknown message");
-      break;
+    zmq::message_t reqMsg;
+    _repSocket.recv(&reqMsg);
+    Request req;
+    if (tryParseRequest(reqMsg, &req)) {
+      ChatResponses response = makeResponse(req);
+      _repSocket.send(wrapMessage(response));
+      handleUpdatePublish(req, response);
     }
-  } else {
-    LOG("Failed to parse from array");
-    return makeInvalidRequest(ResponseStatus::FailedToParse);
+    else {
+      LOG("Failed to parse from array");
+      _repSocket.send(
+          wrapMessage(makeInvalidRequest(ResponseStatus::FailedToParse)));
+    }
   }
 }
 
-zmq::message_t
-MessageServer::handleMessageSending(Request request) {
+ChatResponses MessageServer::makeResponse(const Request &request) {
+  switch (request.type()) {
+  case RequestType::Put:
+    LOG("Received PUT message");
+    return handleMessageSending(request);
+  case RequestType::Get:
+    LOG("Received GET message");
+    return handleMessageRetrieval(request);
+  default:
+    LOG("Received unknown message");
+    break;
+  }
+}
+
+ChatResponses MessageServer::handleMessageSending(Request request) {
   // create timestamp message for "now"
-  Timestamp recvTs = timestampMessageFromNative(std::chrono::system_clock::now());
+  Timestamp recvTs =
+      timestampMessageFromNative(std::chrono::system_clock::now());
   // create response message with received timestamp
   ChatMessage msg = request.messageput().msg();
   *msg.mutable_receivedat() = recvTs;
@@ -58,11 +64,10 @@ MessageServer::handleMessageSending(Request request) {
   ChatResponses response;
   response.set_type(ResponseType::Put);
   response.set_status(ResponseStatus::Ok);
-  return wrapMessage(response);
+  return response;
 }
 
-zmq::message_t
-MessageServer::handleMessageRetrieval(Request request) {
+ChatResponses MessageServer::handleMessageRetrieval(Request request) {
   const GetRequest getRequest = request.messageget();
   // query messages accordingly to the optional lastknownid parameter
   std::vector<ChatMessage> queryResult;
@@ -79,13 +84,11 @@ MessageServer::handleMessageRetrieval(Request request) {
   resp.set_type(ResponseType::Get);
   resp.set_status(ResponseStatus::Ok);
   *resp.mutable_getresponse() = getResponse;
-
-  return wrapMessage(resp);
+  return resp;
 }
 
-zmq::message_t
-MessageServer::makeInvalidRequest(ResponseStatus status,
-                               const Request &request) const {
+ChatResponses MessageServer::makeInvalidRequest(ResponseStatus status,
+                                                const Request &request) const {
   assert(status != ResponseStatus::Ok &&
          "Attempt to respond to invalid request with Ok status");
   InvalidRequest invalidRequest;
@@ -96,14 +99,29 @@ MessageServer::makeInvalidRequest(ResponseStatus status,
   resp.set_type(ResponseType::Invalid);
   resp.set_status(status);
   *resp.mutable_invalid() = invalidRequest;
-  return wrapMessage(resp);
+  return resp;
 }
 
-zmq::message_t MessageServer::makeInvalidRequest(ResponseStatus status) const {
+ChatResponses MessageServer::makeInvalidRequest(ResponseStatus status) const {
   InvalidRequest invalidRequest;
   ChatResponses resp;
   resp.set_type(ResponseType::Invalid);
   resp.set_status(status);
   *resp.mutable_invalid() = invalidRequest;
-  return wrapMessage(resp);
+  return resp;
+}
+
+void MessageServer::handleUpdatePublish(Request request,
+                                        ChatResponses response) {
+  if (request.type() == RequestType::Put &&
+      response.status() == ResponseStatus::Ok) {
+    assert(request.has_messageput() && "Attempt to broadcast empty message");
+    const ChatMessage msg = request.messageput().msg();
+    _pubSocket.send(wrapMessage(msg));
+  }
+}
+
+bool MessageServer::tryParseRequest(const zmq::message_t &msg,
+                                    Request *request) const {
+  return request->ParseFromArray(msg.data(), msg.size());
 }

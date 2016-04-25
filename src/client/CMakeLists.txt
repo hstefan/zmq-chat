@@ -1,10 +1,12 @@
 set(SOURCE
   main.cpp
   ChatClient.cpp
+  MessageUpdater.cpp
 )
 
 set(HEADER
   ChatClient.hpp
+  MessageUpdater.hpp
 )
 
 

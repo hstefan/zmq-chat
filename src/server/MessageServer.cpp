@@ -113,6 +113,8 @@ ChatResponses MessageServer::makeInvalidRequest(ResponseStatus status) const {
 
 void MessageServer::handleUpdatePublish(Request request,
                                         ChatResponses response) {
+  LOG_F("Handling publish message of type %d, response %d\n",
+      (int)request.type(), (int)response.status());
   if (request.type() == RequestType::Put &&
       response.status() == ResponseStatus::Ok) {
     assert(request.has_messageput() && "Attempt to broadcast empty message");

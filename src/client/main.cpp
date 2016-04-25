@@ -1,6 +1,8 @@
 #include "ChatClient.hpp"
 #include "shared/common.pb.h"
 #include "shared/TimestampUtil.hpp"
+#include "shared/Debug.hpp"
+#include "MessageUpdater.hpp"
 #include <iostream>
 
 void doNicknameCommand(std::string *nickname) {
@@ -37,6 +39,8 @@ void doGetCommand(hst::ChatClient *client) {
 
 int main() {
   hst::ChatClient client("tcp://localhost:5555");
+  hst::MessageUpdater messageUpdater("tcp://localhost:5555",
+                                     "tcp://localhost:5556");
   std::string nickname = "unknown";
 
   bool quit = false;
